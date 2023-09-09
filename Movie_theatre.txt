@@ -1,0 +1,1130 @@
+import pygame
+import pickle
+import csv
+from tkinter import *
+import datetime
+import os
+import mysql.connector
+date= datetime.datetime.now()
+date=date.strftime("%Y-%m-%d ")
+#mysql for customer orders
+mycon=mysql.connector.connect(host='localhost',user='root',password='password',database='project')
+if mycon.is_connected()==True:
+    print("connection sucessful")
+else:
+    print("connection failed")
+cursor=mycon.cursor()
+
+#CREATING THE TABLE for customer orders
+a="CREATE TABLE MCUSTOMER(Cno INT NOT NULL AUTO_INCREMENT,Movie VARCHAR(30),Screen INT,No_of_seats INT,Name VARCHAR(40),Phone BIGINT,Email VARCHAR(50),Credit BIGINT,Age INT,Gender VARCHAR(20),Address VARCHAR(80),Total INT,Date DATE,Time TIME, PRIMARY KEY (Cno))"
+cursor.execute(a)
+mycon.commit()
+
+#food
+#dictionary for food...how much of X would you like?
+fbdic={262:"COLAS",255:"FRIES",290:"POPCORNS",262:"PIZZAS",272:"NUTTIES",276:"NACHOS",287:"HOTDOGS",264:"TACOS"}
+Xf = 930
+Yf = 500
+cli=0
+done=0
+foods=[]
+numbers=[]
+fnall=[]
+fnal=[]
+no=0
+no1=0
+no2=0
+leng=0
+s=0
+sl=""
+geo=""
+#food
+#the main list that is used for bill and ticket and inserted into csv.
+main=[]
+vseat=[]
+today = date
+countseat=0
+leftseat=0
+sctext=''
+#dictionary for screen 
+dic={1:"BLACK WIDOW",2:"THE BATMAN",3:"WONDER WOMAN 1984",4:"IT:CHAPTER TWO",5:"MISS AMERICANA",6:"ONWARD"}
+
+#food-----
+h=[]
+def entryfood():
+    global h
+    f=open("food.csv",'w',newline='')
+    fields=['FOOD ITEM','QTY','AMOUNT','GST',' TOTAL AMOUNT','DATE','TIME']
+    w=csv.writer(f)
+    w.writerow(fields)    
+    f=open("food.csv",'a',newline='')
+    w=csv.writer(f)
+    w.writerow(h)
+    f.close()
+def enterfood():
+    global h
+    f=open("food.csv",'a',newline='')
+    w=csv.writer(f)
+    w.writerow(h)
+    f.close()
+def appendfood():
+    h.append(foods)
+    h.append(numbers)
+    h.append(f)
+    h.append("3%")
+    h.append(z)
+    h.append(date)
+    h.append(time)
+def sm():
+    global nm,fnal,done
+    nm=int(ni_entry.get())
+    numbers.append(nm)
+    fnal=[]
+    done=1
+    fd.destroy()
+    
+def som():
+    global ni_entry,fd,sl,geo
+    fvd.destroy()
+    for i in range(0,len(foods)):
+        for x in fbdic.keys():
+            if foods[i]==fbdic[x]:
+                leng=x
+                sl=str(leng)
+                geo=sl+"x85"
+        fd=Tk()
+        fd.geometry(geo)
+        #fd.title("Quantity")
+        ni_var=IntVar()
+        ni_label =Label(fd, text = "how many of "+foods[i]+" would you like?:", font=('calibre', 12)) 
+        ni_entry =Entry(fd, textvariable = ni_var,font=('calibre',12))
+        so_btn=Button(fd,text = 'OK', width=5,command =sm)
+        ni_label.grid(row=0,column=1) 
+        ni_entry.grid(row=1,column=1)
+        so_btn.grid(row=3,column=1)
+        fd.mainloop()
+#food-----
+
+#used first to create and add into a csv
+def entry():
+    f=open("mt.csv",'w',newline='')
+    fields=['CNO','Movie','Screen','No. of Seats','Seats','Name','Phone','Email','Credit','Age','Gender','Address','Total','Date','Time']
+    w=csv.writer(f)
+    w.writerow(fields)
+    global main
+    f=open("mt.csv",'a',newline='')
+    w=csv.writer(f)
+    mainfnal=[1]
+    mainfnal.extend(main)
+    w.writerow(mainfnal)
+    f.close()
+vforslno=0
+#used to add into a csv 
+def enter():
+    global main,vforslno
+    f=open("mt.csv",'a+')
+    r=csv.writer(f)
+    for i in f:
+        vforslno=i[0]
+    numforslno=int(vforslno)+1
+    mainfnal=[numforslno]
+    mainfnal.extend(main)
+    f=open("mt.csv",'a',newline='')
+    w=csv.writer(f)
+    w.writerow(mainfnal)
+    f.close()
+
+#timing
+def ist():
+     global main,timing,fixtime
+     timing=var.get()
+     #main.append(timing)
+     fixtime=timing[0:5]
+     
+#the total number of seats you want.
+def sumt():
+    global main,num,ed,couldbenum
+    num=int(num_entry.get())
+    couldbenum=num
+    ed=Tk() 
+    ed.geometry("450x55")
+    r=Label(ed,text="Would you like to change the specified number of seats?",font=('calibre', 11))
+    r.grid(row=1,column=2)
+    y_btn=Button(ed,text = 'YES', width=4,command=ed.destroy) 
+    y_btn.grid(row=2,column=1)
+    n_btn=Button(ed,text = 'NO', width=4,command=cl) 
+    n_btn.grid(row=2,column=3)
+    ed.mainloop()
+count=0
+nothing=0
+listovseats=[]
+
+#seat numbers.d is the seat number.
+#check makes sure that the number of seats registered are the ones that are chosen.
+#the seat numbers are written into BINARY FILE along with movie name.
+
+def com(d):
+    global movie
+    global count
+    global vseat
+    global timing
+    v=[movie,timing]
+    f=open("Nseats.dat",'rb')
+    check=num
+    listovseats=[]
+    while True:
+        try:
+            rec=pickle.load(f)
+            if rec[0]==movie and rec[1]==timing:
+                nothing=rec[2]
+                listovseats.append(nothing)
+        except EOFError:
+            break
+    if count<check:
+        if d not in listovseats:
+            v.append(d)
+            vseat.append(d)
+            count=count+1
+            if d:
+                bo=b[d-1]
+                bo.config(bg="gray")
+    f.close()   
+    f=open("Nseats.dat",'ab+')
+    if count<=check and len(v)==3:
+        pickle.dump(v,f)
+    f.close()
+
+#variable for price of tickets    
+tot=0
+#affirm is for asking if u want snacks
+affirm=0
+#used in submit()
+#the function that will append details 
+def clos():
+    global sqlname,sqlphone,sqlemail,sqlcredit,sqlage,sqldate
+    global sqlgender,sqladdress,sqltotal,sqltime,sqlnos,num
+    root.destroy()
+    edit.destroy()
+    main.append(vseat)
+    main.append(name)
+    main.append(phone)
+    main.append(email)   
+    main.append(credit)
+    main.append(age)
+    main.append(gender)    
+    main.append(address)    
+    tot=num*250
+    main.append(tot)    
+    main.append(today)
+    main.append(timing)
+
+    #sql
+    sqlname=name
+    sqlphone=int(phone)
+    sqlemail=email
+    sqlcredit=int(credit)
+    sqlage=int(age)
+    sqlgender=gender
+    sqladdress=address
+    sqltotal=tot
+    sqldate=today
+    sqltime=fixtime
+    sqlnos=num
+
+
+def closefq():
+    global affirm
+    affirm=1
+    editf.destroy()
+def cl():
+    global ed,seats,couldbenum,main
+    seats.destroy()
+    ed.destroy()
+    main.append(couldbenum)
+#entry details. 
+def submit():
+    global num,tot,root,edit
+    global name,phone,email,credit,age,gender,address,tot
+    
+    name=name_var.get()
+    phone=phone_var.get()
+    email=email_var.get()
+    credit=credit_var.get()
+    age=age_var.get()
+    gender=gender_var.get()
+    address=address_var.get()
+    if var1.get()==1:
+        gender="male"
+    elif var2.get()==1:
+        gender="female"
+    edit=Tk() 
+    edit.geometry("200x60")
+    r=Label(edit,text="Do you want to submit?")
+    r.grid(row=1,column=2)
+    y_btn=Button(edit,text = 'YES', width=4,command=clos) 
+    y_btn.grid(row=2,column=1)
+    n_btn=Button(edit,text = 'NO', width=3,command=edit.destroy) 
+    n_btn.grid(row=2,column=3)
+    edit.mainloop()
+def display_from_mt():
+    f=open("mt.csv",'r')
+    r=csv.reader(f)
+    for rec in r:
+        print(rec)    
+    f.close()
+def del_from_mt():
+    f=open("mt.csv",'r')
+    t=open("tempmt.csv",'w',newline='')
+    fr=csv.reader(f)
+    tr=csv.writer(t)
+    found=0
+    n=input("enter cno.")
+    for rec in fr:
+        if  rec[0]!=n :
+            tr.writerow(rec)
+        else:
+            found=1
+    f.close()
+    t.close()
+    if found==0:
+        print("no such order was found")
+    else:
+        os.remove("mt.csv")
+        os.rename("tempmt.csv","mt.csv")
+    f=open("mt.csv",'r')
+    r=csv.reader(f)
+    for rec in r:
+        print(rec)    
+    f.close()
+    #food
+    ff=open("food.csv",'r')
+    tf=open("tempfood.csv",'w',newline='')
+    ffr=csv.reader(ff)
+    tfr=csv.writer(tf)
+    found=0
+    for rec in ffr:
+        if  rec[0]!=n :
+            tfr.writerow(rec)
+        else:
+            found=1
+    ff.close()
+    tf.close()
+    if found==0:
+        print("no such food order was found")
+    else:
+        os.remove("food.csv")
+        os.rename("tempfood.csv","food.csv")
+        print("The MONEY will be returned in 4-5 days")
+    fff=open("food.csv",'r')
+    fffr=csv.reader(fff)
+    for rec in fffr:
+        print(rec)    
+    fff.close()
+def update():
+    f=open("mt.csv",'r+',newline='')
+    csv_r=csv.reader(f)
+    found=0
+    num=input('enter the id to be updated')
+    NL=[]
+    for rec in csv_r:
+        if rec[0]==num:
+            rec[5]=input("enter  new name")
+            rec[6]=input("enter new Phone no.")
+            rec[7]=input("enter  new Email id")
+            rec[8]=input("enter  new Credit")
+            rec[9]=input("enter  new Age")
+            rec[10]=input("enter  new Gender(male/female)")
+            rec[11]=input("enter  new Address")
+            print(rec)
+            found=1
+        NL.append(rec)
+    if found==0:
+        print("record doesnt exist")
+    else:
+        f.seek(0)
+        csv_w=csv.writer(f)
+        for row in NL:
+            csv_w.writerow(row)
+    f.close()
+def deny_mt():
+    global password,pas
+    #def validateLogin():
+      #  pas.destroy()
+        #print("password is:",password.get())
+    pas=Tk() 
+    pas.geometry("250x70")
+    pas.title("PASSWORD")
+    r=Label(pas,text="ENTER ADMIN PASSWORD:")
+    r.grid(row=0,column=1)
+    password_var=StringVar()
+    passwordLabel = Label(pas,text="Password").grid(row=1, column=0)  
+    password = StringVar()
+    passwordEntry = Entry(pas, textvariable=password, show='*').grid(row=1, column=1)  
+    loginButton = Button(pas, text="OK", command=validateLogin).grid(row=4, column=1)  
+    pas.mainloop()
+    while password.get()=="password123":
+        print("1.display")
+        print("2.update")
+        print("3.delete")
+        print("4.book a ticket")
+        ch=int(input("enter choice:"))
+        if ch==1:
+            display_from_mt()
+        if ch==2:
+            update()
+        if ch==3:
+            del_from_mt()
+        if ch==4:
+            pygame.init()
+            break
+    else:
+         print("Access denied,please try again")
+         deny_mt()
+def validateLogin():
+        pas.destroy()
+        print("password is:",password.get())
+def csv_mt():
+    global password
+    ad.destroy()
+    def validateLogin():
+        pas.destroy()
+        print("password is:",password.get())
+    pas=Tk() 
+    pas.geometry("250x70")
+    pas.title("PASSWORD")
+    r=Label(pas,text="ENTER ADMIN PASSWORD:")
+    r.grid(row=0,column=1)
+    password_var=StringVar()
+    passwordLabel = Label(pas,text="Password:").grid(row=1, column=0)  
+    password = StringVar()
+    passwordEntry = Entry(pas, textvariable=password, show='*').grid(row=1, column=1)  
+    loginButton = Button(pas, text="OK", command=validateLogin).grid(row=4, column=1)  
+    pas.mainloop()
+    while password.get()=="password123":
+        print("1.display")
+        print("2.update")
+        print("3.delete")
+        print("4.book a ticket")
+        ch=int(input("enter choice:"))
+        if ch==1:
+            display_from_mt()
+        if ch==2:
+            update()
+        if ch==3:
+            del_from_mt()
+        if ch==4:
+            pygame.init()
+            break
+    else:
+         print("Access denied,please try again")
+         deny_mt()
+ad=Tk()
+ad.geometry("190x60")
+r=Label(ad,text="LOGIN AS:")
+r.grid(row=1,column=2)
+y_btn=Button(ad,text = 'ADMIN', width=6,command=csv_mt) 
+y_btn.grid(row=2,column=1)
+n_btn=Button(ad,text = 'CUSTOMER', width=9,command=ad.destroy) 
+n_btn.grid(row=2,column=3)
+ad.mainloop()
+click=0
+pygame.init() 
+X = 1000
+Y = 600
+#button list-
+b=[]
+mouse_clicks=0
+display_surface = pygame.display.set_mode((X, Y )) 
+pygame.display.set_caption('MOVIES') 
+
+i1=pygame.image.load('C:\Python\IM1.jpg')
+i2=pygame.image.load('C:\Python\IM2.jpg')
+i3=pygame.image.load('C:\Python\IM3.jpg')
+i4=pygame.image.load('C:\Python\IM4.jpg')
+i5=pygame.image.load('C:\Python\IM5.jpg')
+i6=pygame.image.load('C:\Python\IM6.jpg')
+movie=""
+while True : 
+    display_surface.blit(i1, (150, 50)) 
+    display_surface.blit(i2, (400, 50))
+    display_surface.blit(i3, (650, 50))
+    display_surface.blit(i4, (150, 300))
+    display_surface.blit(i5, (400, 300))
+    display_surface.blit(i6, (650, 300)) 
+    for event in pygame.event.get() :
+        if event.type==pygame.MOUSEBUTTONUP:
+            x,y=pygame.mouse.get_pos()
+            #print(x,y)
+            if x>150 and x<295 and y>50 and y<265:
+                time = Tk()
+                time.geometry("350x50")
+                time.title("Time Slots for BLACK WIDOW")
+                var = StringVar()
+                t1 = Radiobutton(time, text="09:30hrs", variable=var, value="09:30hrs",command=ist).pack()
+                t2 = Radiobutton(time, text="11:30hrs", variable=var, value="11:30hrs",command=ist).pack()
+                time.mainloop()
+                if click==0:
+                   click=1
+                   movie="BLACK WIDOW"
+                   for x in dic.keys():
+                       if movie==dic[x]:
+                           sc=x
+                           scr=str(sc)
+                           screen="screen"+" "+scr
+                   print("The movie you have selected is Black widow and your screen is:"+" "+screen)
+            if x>400  and x<551 and y>50  and y<255:
+                time = Tk()
+                time.geometry("350x50")
+                time.title("Time Slots for THE BATMAN")
+                var = StringVar()
+                t1 = Radiobutton(time, text="11:30hrs", variable=var, value="11:30hrs",command=ist).pack()
+                t2 = Radiobutton(time, text="13:30hrs", variable=var, value="13:30hrs",command=ist).pack()
+                time.mainloop()
+                if click==0:
+                   click=1
+                   movie="THE BATMAN"
+                   for x in dic.keys():
+                       if movie==dic[x]:
+                           sc=x
+                           scr=str(sc)
+                           screen="screen"+" "+scr
+                   print("The movie you have selected is The Batman and your screen is:"+" "+screen)
+            if x>650 and x<793 and y>50 and y<260:
+                time = Tk()
+                time.geometry("400x50")
+                time.title("Time Slots for WONDER WOMAN 1984")
+                var = StringVar()
+                t1 = Radiobutton(time, text="13:30hrs", variable=var, value="13:30hrs",command=ist).pack()
+                t2 = Radiobutton(time, text="15:00hrs", variable=var, value="15:00hrs",command=ist).pack()
+                time.mainloop()
+                if click==0:
+                    click=1
+                    movie="WONDER WOMAN 1984"
+                    for x in dic.keys():
+                        if movie==dic[x]:
+                            sc=x
+                            scr=str(sc)
+                            screen="screen"+" "+scr
+                    print("The movie you have selected is Wonder Woman 1984 and your screen is:"+" "+screen)
+            if x>150 and x<310 and y>300 and y<505:
+                time = Tk()
+                time.geometry("350x50")
+                time.title("Time Slots for IT:CHAPTER TWO")
+                var = StringVar()
+                t1 = Radiobutton(time, text="15:00hrs", variable=var, value="15:00hrs",command=ist).pack()
+                t2 = Radiobutton(time, text="17:30hrs", variable=var, value="17:30hrs",command=ist).pack()
+                time.mainloop()
+                if click==0:
+                   click=1
+                   movie="IT:CHAPTER TWO"
+                   for x in dic.keys():
+                       if movie==dic[x]:
+                           sc=x
+                           scr=str(sc)
+                           screen="screen"+" "+scr
+                   print("The movie you have selected is IT:Chapter Two and your screen is:"+" "+screen)
+            if x>400 and x<545 and y>300 and y<505:
+                time = Tk()
+                time.geometry("350x50")
+                time.title("Time Slots for MISS AMERICANA")
+                var = StringVar()
+                t1 = Radiobutton(time, text="17:30hrs", variable=var, value="17:30hrs",command=ist).pack()
+                t2 = Radiobutton(time, text="19:00hrs", variable=var, value="19:00hrs",command=ist).pack()
+                time.mainloop()
+                if click==0:
+                   click=1
+                   movie="MISS AMERICANA"
+                   for x in dic.keys():
+                       if movie==dic[x]:
+                           sc=x
+                           scr=str(sc)
+                           screen="screen"+" "+scr
+                   print("The movie you have selected is Miss Americana and your screen is:"+" "+screen)
+            if x>650 and x<795 and y>300 and y<505:
+                time = Tk()
+                time.geometry("350x50")
+                time.title("Time Slots for ONWARD")
+                var = StringVar()
+                t1 = Radiobutton(time, text="19:00hrs", variable=var, value="19:00hrs",command=ist).pack()
+                t2 = Radiobutton(time, text="21:30hrs", variable=var, value="21:30hrs",command=ist).pack()
+                time.mainloop()
+                if click==0:
+                   click=1
+                   movie="ONWARD"
+                   for x in dic.keys():
+                       if movie==dic[x]:
+                           sc=x
+                           scr=str(sc)
+                           screen="screen"+" "+scr
+                   print("The movie you have selected is Onward and your screen is:"+" "+screen)
+            if click==1:
+                #main appending
+                main.append(movie)
+                main.append(screen)
+                #sql
+                sqlmovie=movie
+                sqlscreen=sc
+                #before specifying the number of seats you want
+                seatcheck=Tk() 
+                seatcheck.geometry("200x70")
+                seatcheck.title("SEATS")      
+                checkseat=open("Nseats.dat",'rb')
+                countseat=0
+                while True:
+                    try:
+                        pre=pickle.load(checkseat)
+                        if pre[0]==movie and pre[1]==timing:
+                            countseat=countseat+1                  
+                    except EOFError:
+                        break
+                leftseat=50-countseat
+                sctext="The number of seats left:"+str(leftseat)
+                numlabel =Label(seatcheck, text = sctext, font=('calibre', 12))
+                subbtn=Button(seatcheck,text = 'PROCEED', width=7,command =seatcheck.destroy) 
+                numlabel.grid(row=1,column=1) 
+                subbtn.grid(row=3,column=1)
+                seatcheck.mainloop()
+                
+                seats=Tk() 
+                seats.geometry("225x80")
+                seats.title("SEATS no.")
+                num_var=StringVar()
+                num_label =Label(seats, text = "Select no. of seats(max 15):", font=('calibre', 13)) 
+                num_entry =Entry(seats, textvariable = num_var,font=('calibre',14))
+                sub_btn=Button(seats,text = 'OK', width=5,command =sumt) 
+                num_label.grid(row=0,column=1) 
+                num_entry.grid(row=1,column=1)
+                sub_btn.grid(row=3,column=1)
+                seats.mainloop()
+
+                a = Tk()
+                a.configure(background="black")
+                a.geometry('580x220')
+                l=Label(a, text="S C R E E N", bg="black", fg="white",height=1)
+                l.grid(row=1,column=6)
+                i=Label(a,bg="black")
+                i.grid(row=2,column=6)
+                for c in range(1, 51):
+                    x = Button(a, text=c, width=6,bg="red", command=lambda m=c: com(m))
+                    b.append(x)
+                    if c>=1 and c<=5:
+                        x.grid(row=3,column=c)
+                    elif c>=6 and c<=10:
+                        x.grid(row=3,column=c+1)                    elif c>=11 and c<=15:
+                        x.grid(row=4,column=c-10)
+                    elif c>=16 and c<=20:
+                        x.grid(row=4,column=c-9)
+                    elif c>=21 and c<=25:
+                        x.grid(row=5,column=c-20)
+                    elif c>=26 and c<=30:
+                        x.grid(row=5,column=c-19)
+                    elif c>=31 and c<=35:
+                        x.grid(row=6,column=c-30)
+                    elif c>=36 and c<=40:
+                        x.grid(row=6,column=c-29)
+                    elif c>=41 and c<=45:
+                        x.grid(row=7,column=c-40)
+                    elif c>=46 and c<=50:
+                        x.grid(row=7,column=c-39)
+                g=open("Nseats.dat",'rb')
+                while True:
+                    try:
+                        prev=pickle.load(g)
+                        if prev[0]==movie and prev[1]==timing:
+                            for i in prev:
+                                if i!=movie and i!=timing:
+                                    be=b[i-1]
+                                    be.config(bg="black")
+                                                
+                    except EOFError:
+                        break
+                l=Label(a, text="EXIT",bg="black", fg="white",height=1)
+                l.grid(row=5,column=6)
+                j= Button(a, text="OK",bg="black", fg="white",width=6,command=a.destroy)
+                j.grid(row=8,column=11)
+                a.mainloop()
+                g.close()
+                root=Tk() 
+                root.geometry("320x200")
+                root.title("ENTER YOUR DETAILS")
+
+#initializing text\string variables for detail entry  name_var,phone_var,email_var,credit_var,age_var,gender_var,address_var=StringVar(),StringVar(),StringVar(),StringVar(),StringVar(),StringVar(),StringVar()
+                var1,var2 = IntVar() ,IntVar() 
+                name_label =Label(root, text = "Name", font=('calibre', 10, 'bold')) 
+                name_entry =Entry(root, textvariable = name_var,font=('calibre',10,'normal'))
+                phone_label = Label(root, text = 'Phone no.', font = ('calibre',10,'bold')) 
+                phone_entry=Entry(root, textvariable = phone_var, font = ('calibre',10,'normal'))
+                email_label =Label(root, text = 'Email', font=('calibre', 10, 'bold')) 
+                email_entry =Entry(root, textvariable = email_var,font=('calibre',10,'normal'))
+                credit_label =Label(root, text = 'Credit card no.', font=('calibre', 10, 'bold')) 
+                credit_entry =Entry(root, textvariable = credit_var,font=('calibre',10,'normal'))   
+                age_label =Label(root, text = 'Age', font=('calibre', 10, 'bold')) 
+                age_entry =Entry(root, textvariable = age_var,font=('calibre',10,'normal')) 
+                gender_label =Label(root, text = 'Gender', font=('calibre', 10, 'bold'))
+                Checkbutton(root, text='male', variable=var1).grid(row=5,column=1) 
+                Checkbutton(root, text='female', variable=var2).grid(row=5,column=2) 
+                address_label =Label(root, text = 'Address', font=('calibre', 10, 'bold')) 
+                address_entry =Entry(root, textvariable = address_var,font=('calibre',10,'normal'))
+                sub_btn=Button(root,text = 'Submit', command =submit) 
+
+                #positioning in the grid
+                name_label.grid(row=0,column=0) 
+                name_entry.grid(row=0,column=1) 
+                phone_label.grid(row=1,column=0) 
+                phone_entry.grid(row=1,column=1)
+                email_label.grid(row=2,column=0) 
+                email_entry.grid(row=2,column=1)
+                credit_label.grid(row=3,column=0) 
+                credit_entry.grid(row=3,column=1)
+                age_label.grid(row=4,column=0) 
+                age_entry.grid(row=4,column=1)
+                gender_label.grid(row=5,column=0)
+                address_label.grid(row=6,column=0) 
+                address_entry.grid(row=6,column=1)
+                sub_btn.grid(row=7,column=1)
+                #positioning OVER
+                root.mainloop() 
+                
+                bill=Tk()
+                bill.geometry("255x190")
+                bill.title("***BILL***")
+                #address
+                theaddress=Label(bill, text ="GOLDEN Theatre, Hulimavu, Bangalore", font=('calibre', 10, 'bold'))
+
+                #movie
+                mov=Label(bill, text = "MOVIE:",font=('calibre', 10, 'bold'))
+                themovie =Label(bill, text = main[0])
+                #seats
+                if main[1]==1:
+                    se=Label(bill, text = "SEAT:",font=('calibre', 10, 'bold'))
+                else:
+                    se=Label(bill, text = "SEATS:",font=('calibre', 10, 'bold'))
+                theseat =Label(bill, text = vseat,font=('calibre', 10, 'bold'))
+                #date
+                dae=Label(bill, text = "DATE:",font=('calibre', 10, 'bold'))
+                thedate=Label(bill, text = main[12],font=('calibre', 10, 'bold'))
+                #time
+                tim=Label(bill, text = "TIME:",font=('calibre', 10, 'bold'))
+                thetime=Label(bill, text = main[13])
+                #total
+                tota=Label(bill, text = "TOTAL:",font=('calibre', 10, 'bold'))
+                thetotal=Label(bill, text = main[11],font=('calibre', 10, 'bold'))
+                #organizing
+                theaddress.place(anchor=NW)
+                #left
+                mov.place(relx=0.05,rely=0.17,anchor=W)
+                se.place(relx=0.05,rely=0.37,anchor=W)
+                dae.place(relx=0.05,rely=0.57,anchor=W)
+                tim.place(relx=0.05,rely=0.77,anchor=W)
+                tota.place(relx=0.05,rely=0.97,anchor=W)
+                #right
+                themovie.place(relx=0.95,rely=0.17,anchor=E)
+                theseat.place(relx=0.95,rely=0.37,anchor=E)
+                thedate.place(relx=0.95,rely=0.57,anchor=E)
+                thetime.place(relx=0.95,rely=0.77,anchor=E)
+                thetotal.place(relx=0.95,rely=0.97,anchor=E)
+
+                bill.mainloop()
+
+                tick1=Tk()
+                no=main[2]
+                l=198
+                if no<=5:
+                    b=no*135
+                else:
+                    b=5*135
+                L=str(l)
+                B=str(b)
+                tick1.geometry(L+"x"+B)
+                tick1.title("TICKET")
+                va=0
+
+                for i in range(no):
+                    mo=Label(tick1, text = "MOVIE:",font=('calibre', 10, 'bold'))
+                    tie =Label(tick1, text = main[0])
+                    ste=Label(tick1, text = "SCREEN:",font=('calibre', 10, 'bold'))
+                    tat =Label(tick1, text = main[1],font=('calibre', 10, 'bold'))
+                    to=Label(tick1, text = "SEAT:",font=('calibre', 10, 'bold'))    
+                    tal=Label(tick1, text = vseat[i],font=('calibre', 10, 'bold'))
+                    t=Label(tick1, text = "TIME:",font=('calibre', 10, 'bold'))
+                    tt=Label(tick1, text = main[13])
+                    d=Label(tick1, text = "DATE:",font=('calibre', 10, 'bold'))
+                    td=Label(tick1, text = today,font=('calibre', 10, 'bold'))
+                    linea=Label(tick1, text = "--------------",font=('calibre', 10, 'bold'))
+                    lineb=Label(tick1, text = "--------------------------------",font=('calibre', 10, 'bold'))
+                    linec=Label(tick1, text = "--------------",font=('calibre', 10, 'bold'))
+                    lined=Label(tick1, text = "--------------------------------",font=('calibre', 10, 'bold'))
+
+                    linea.grid(row = 1+va, column = 0, sticky = W)
+                    lineb.grid(row = 1+va, column = 1, sticky = E)
+                    mo.grid(row = 2+va, column = 0, sticky = W)
+                    ste.grid(row = 3+va, column = 0, sticky = W)
+                    d.grid(row = 4+va, column = 0, sticky = W)
+                    t.grid(row = 5+va, column = 0, sticky = W)
+                    to.grid(row = 6+va, column = 0, sticky = W)
+                    #right
+                    tie.grid(row = 2+va, column = 1, sticky = E)
+                    tat.grid(row = 3+va, column = 1, sticky = E)
+                    td.grid(row = 4+va, column = 1, sticky = E)
+                    tt.grid(row = 5+va, column = 1, sticky = E)
+                    tal.grid(row = 6+va, column = 1, sticky = E)
+                    va=va+6
+                tick1.mainloop()
+                if no>5:
+                    no1=no-5
+                    no2=no1-5
+                if no1>0:
+                    l=198
+                    if no1<=5:
+                        b=no1*135
+                    else:
+                        b=5*135
+                    L=str(l)
+                    B=str(b)
+                    tick2=Tk()
+                    tick2.geometry(L+"x"+B)
+                    tick2.title("TICKET")
+                    va=0
+                    for i in range(5,no1+5):
+                        mo=Label(tick2, text = "MOVIE:",font=('calibre', 10, 'bold'))
+                        tie =Label(tick2, text = main[0])
+                        ste=Label(tick2, text = "SCREEN:",font=('calibre', 10, 'bold'))
+                        tat =Label(tick2, text = main[1],font=('calibre', 10, 'bold'))
+                        to=Label(tick2, text = "SEAT:",font=('calibre', 10, 'bold'))    
+                        tal=Label(tick2, text = vseat[i],font=('calibre', 10, 'bold'))
+                        t=Label(tick2, text = "TIME:",font=('calibre', 10, 'bold'))
+                        tt=Label(tick2, text = main[13])
+                        d=Label(tick2, text = "DATE:",font=('calibre', 10, 'bold'))
+                        td=Label(tick2, text = today,font=('calibre', 10, 'bold'))
+                        linea=Label(tick2, text = "--------------",font=('calibre', 10, 'bold'))
+                        lineb=Label(tick2, text = "--------------------------------",font=('calibre', 10, 'bold'))
+                        linec=Label(tick2, text = "--------------",font=('calibre', 10, 'bold'))
+                        lined=Label(tick2, text = "--------------------------------",font=('calibre', 10, 'bold'))
+                        linea.grid(row = 1+va, column = 0, sticky = W)
+                        lineb.grid(row = 1+va, column = 1, sticky = E)
+                        mo.grid(row = 2+va, column = 0, sticky = W)
+                        ste.grid(row = 3+va, column = 0, sticky = W)
+                        d.grid(row = 4+va, column = 0, sticky = W)
+                        t.grid(row = 5+va, column = 0, sticky = W)
+                        to.grid(row = 6+va, column = 0, sticky = W)
+                        #right
+                        tie.grid(row = 2+va, column = 1, sticky = E)
+                        tat.grid(row = 3+va, column = 1, sticky = E)
+                        td.grid(row = 4+va, column = 1, sticky = E)
+                        tt.grid(row = 5+va, column = 1, sticky = E)
+                        tal.grid(row = 6+va, column = 1, sticky = E)
+                        va=va+6
+                    tick2.mainloop()
+                if no2>0:
+                    l=198
+                    if no2<=5:
+                        b=no2*135
+                    else:
+                        b=5*135
+                    L=str(l)
+                    B=str(b)
+                    tick3=Tk()
+                    tick3.geometry(L+"x"+B)
+                    tick3.title("TICKET")
+                    va=0
+                    for i in range(10,no2+10):
+                        mo=Label(tick3, text = "MOVIE:",font=('calibre', 10, 'bold'))
+                        tie =Label(tick3, text = main[0])
+                        ste=Label(tick3, text = "SCREEN:",font=('calibre', 10, 'bold'))
+                        tat =Label(tick3, text = main[1],font=('calibre', 10, 'bold'))
+                        to=Label(tick3, text = "SEAT:",font=('calibre', 10, 'bold'))    
+                        tal=Label(tick3, text = vseat[i],font=('calibre', 10, 'bold'))
+                        t=Label(tick3, text = "TIME:",font=('calibre', 10, 'bold'))
+                        tt=Label(tick3, text = main[13])
+                        d=Label(tick3, text = "DATE:",font=('calibre', 10, 'bold'))
+                        td=Label(tick3, text = today,font=('calibre', 10, 'bold'))
+                        linea=Label(tick3, text = "--------------",font=('calibre', 10, 'bold'))
+                        lineb=Label(tick3, text = "--------------------------------",font=('calibre', 10, 'bold'))
+                        linec=Label(tick3, text = "--------------",font=('calibre', 10, 'bold'))
+                        lined=Label(tick3, text = "--------------------------------",font=('calibre', 10, 'bold'))
+
+                        linea.grid(row = 1+va, column = 0, sticky = W)
+                        lineb.grid(row = 1+va, column = 1, sticky = E)
+                        mo.grid(row = 2+va, column = 0, sticky = W)
+                        ste.grid(row = 3+va, column = 0, sticky = W)
+                        d.grid(row = 4+va, column = 0, sticky = W)
+                        t.grid(row = 5+va, column = 0, sticky = W)
+                        to.grid(row = 6+va, column = 0, sticky = W)
+                        #right
+                        tie.grid(row = 2+va, column = 1, sticky = E)
+                        tat.grid(row = 3+va, column = 1, sticky = E)
+                        td.grid(row = 4+va, column = 1, sticky = E)
+                        tt.grid(row = 5+va, column = 1, sticky = E)
+                        tal.grid(row = 6+va, column = 1, sticky = E)
+                        va=va+6
+
+                    tick3.mainloop()
+                #MT.CSV
+                #entry()
+                enter()
+
+fns="INSER INTO            MCUSTOMER(Movie,Screen,No_of_seats,Name,Phone,Email,Credit,Age,Gender,Address,Total,Date,Time)VALUES('{}',{},{},'{}',{},'{}',{},{},'{}','{}',{},'{}','{}')".format(sqlmovie,sqlscreen,sqlnos,sqlname,sqlphone,sqlemail,sqlcredit,sqlage,sqlgender,sqladdress,sqltotal,sqldate,sqltime)
+                cursor.execute(fns)
+                mycon.commit()               
+                c="SELECT * from MCUSTOMER"
+                cursor.execute(c)
+                while True:
+                    data=cursor.fetchone()
+                    if data==None:
+                        break
+                    else:
+                        print(data)
+                
+                mycon.close()
+               
+                editf=Tk() 
+                editf.geometry("250x55")
+                rf=Label(editf,text="Do you want to purchase snacks?")
+                rf.grid(row=1,column=2)
+                yf_btn=Button(editf,text = 'YES', width=4,command=closefq) 
+                yf_btn.grid(row=2,column=1)
+                nf_btn=Button(editf,text = 'NO', width=3,command=editf.destroy) 
+                nf_btn.grid(row=2,column=3)
+                editf.mainloop()
+                         
+                if affirm==1:
+                    display_surface = pygame.display.set_mode((Xf, Yf )) 
+                    pygame.display.set_caption('Choose the Snacks you would like:')
+                    f1=pygame.image.load('C:\Python\FOOD1.jpg')
+                    f2=pygame.image.load('C:\Python\FOOD2.jpg')
+                    f3=pygame.image.load('C:\Python\FOOD3.jpg')
+                    f4=pygame.image.load('C:\Python\FOOD4.jpg')
+                    f5=pygame.image.load('C:\Python\FOOD5.jpg')
+                    f6=pygame.image.load('C:\Python\FOOD6.jpg')
+                    f7=pygame.image.load('C:\Python\FOOD7.jpg')
+                    f8=pygame.image.load('C:\Python\FOOD8.jpg')
+                    while True : 
+                        display_surface.blit(f1, (100, 50)) 
+                        display_surface.blit(f2, (300, 50))
+                        display_surface.blit(f3, (500, 50))
+                        display_surface.blit(f4, (700, 50))
+                        display_surface.blit(f5, (100, 250))
+                        display_surface.blit(f6, (300, 250))
+                        display_surface.blit(f7, (500, 250))
+                        display_surface.blit(f8, (700, 250))
+                        for event in pygame.event.get() :
+                            if event.type==pygame.MOUSEBUTTONUP:
+                                x,y=pygame.mouse.get_pos()
+                                if x>99 and x<234 and y>50 and y<196:
+                                    if cli==0:
+                                       cli=1
+                                       food="COLAS"
+                                       foods.append(food)                                    
+                                if x>300 and x<437 and y>50 and y<196:
+                                    if cli==0:
+                                       cli=1
+                                       food="FRIES"
+                                       foods.append(food)
+                                if x>500 and x<643 and y>50 and y<202:
+                                    if cli==0:
+                                       cli=1
+                                       food="POPCORNS"
+                                       foods.append(food)
+                                if x>700 and x<843 and y>50 and y<197:
+                                    if cli==0:
+                                       cli=1
+                                       food="PIZZAS"
+                                       foods.append(food)
+                                if x>100 and x<241 and y>250 and y<395:
+                                    if cli==0:
+                                       cli=1
+                                       food="NUTTIES"
+                                       foods.append(food)
+                                if x>300 and x<443 and y>251 and y<394:
+                                    if cli==0:
+                                       cli=1
+                                       food="NACHOS"
+                                       foods.append(food)                                    
+                                if x>500 and x<639 and y>250 and y<397:
+                                    if cli==0:
+                                       cli=1
+                                       food="HOTDOGS"
+                                       foods.append(food)                                    
+                                if x>701 and x<845 and y>251 and y<399:
+                                    if cli==0:
+                                       cli=1
+                                       food="TACOS"
+                                       foods.append(food)                                  
+                                if cli==1:
+                                    fvd=Tk()
+                                    fvd.geometry("300x60")
+                                    #fvd.title("Quantity")
+                                    n_var=StringVar()
+                                    n_label =Label(fvd, text = "would you like anything else?:", font=('calibre', 12)) 
+                                    s_btn=Button(fvd,text = 'YES', width=5,command =fvd.destroy)
+                                    sf_btn=Button(fvd,text = 'NO', width=5,command =som)
+                                    n_label.grid(row=0,column=1) 
+                                    s_btn.grid(row=3,column=0)
+                                    sf_btn.grid(row=3,column=2)
+                                    fvd.mainloop()                
+                                    cli=0
+
+                                    if done==1:
+                                        for i in range(len(foods)):
+                                            s=numbers[i]
+                                            for j in range(len(foods)):
+                                                if foods[j]==foods[i] and i!=j:
+                                                    s=s+numbers[j]
+                                            fnall.append([foods[i],s])
+                                        fnal=[]
+                                        for i in fnall:
+                                            if i not in fnal:
+                                                fnal.append(i)                
+                                        time=datetime.datetime.now()
+                                        time=time.strftime("%H :%M : %S")
+                                        food=Tk()
+                                        food.geometry("400x350")
+                                        food.title("***FOODBILL***")
+                                        #food court
+                                        thefoodcourt=Label(food, text ="GOLDEN Theatre Food court, Hulimavu,
+                                        Bangalore", font=('calibre', 10, 'bold'))
+                                        #date
+                                        dae=Label(food, text = "DATE:",font=('calibre', 10, 'bold'))
+                                        thedate=Label(food, text =date )
+                                        #time
+                                        tim=Label(food, text = "TIME:",font=('calibre', 10, 'bold'))
+                                        thetime=Label(food, text =time)
+                                        #item
+                                        ite=Label(food, text = "ITEM",font=('calibre', 10, 'bold'))
+                                        #qty
+                                        qty=Label(food, text = "QTY",font=('calibre', 10, 'bold'))
+                                        #rate
+                                        rate=Label(food, text = "RATE",font=('calibre', 10, 'bold'))
+                                        #amt
+                                        amt=Label(food, text = "AMT",font=('calibre', 10, 'bold'))
+                                        #total
+                                        tota=Label(food, text = "TOTAL:",font=('calibre', 10, 'bold'))
+                                        #tax
+                                        tax=Label(food, text = "GST:",font=('calibre', 10, 'bold'))
+                                        thetax=Label(food, text ="3%")
+                                        #totalamount
+                                        total=Label(food, text = "TOTAL AMOUNT:",font=('calibre', 10, 'bold'))
+                                        p=0
+                                        f=[]
+                                        #left
+                                        thefoodcourt.grid(row =1+p, column = 0)
+                                        dae.grid(row = 2+p, column = 0,sticky=W)
+                                        thedate.grid(row=2+p)
+                                        tim.grid(row = 3+p, column = 0,sticky=W)
+                                        thetime.grid(row=3+p)
+                                        ite.grid(row = 4+p, column = 0,sticky=W)
+                                        for i in range(0,len(fnal)):
+                                            if fnal[i][0]=="COLAS":
+                                                theit1=Label(food,text="COLAS")
+                                                theit1.grid(row=5+p,sticky=W)
+                                                theq1=Label(food,text=fnal[i][1])
+                                                theq1.grid(row=5+p)
+                                                a=fnal[i][1]*25
+                                                f.append(a)
+                                                theamt1=Label(food,text=a)
+                                                theamt1.grid(row=5+p,column=2)
+                                            if fnal[i][0]=="FRIES":
+                                                theit2=Label(food,text="FRIES")
+                                                theit2.grid(row=6+p,sticky=W)
+                                                theq2=Label(food,text=fnal[i][1])
+                                                theq2.grid(row=6+p)
+                                                b=fnal[i][1]*40
+                                                f.append(b)
+                                                theamt2=Label(food,text=b)
+                                                theamt2.grid(row=6+p,column=2)
+                                            if fnal[i][0]=="POPCORNS":
+                                                theit3=Label(food,text="POPCORNS")
+                                                theit3.grid(row=7+p,sticky=W)
+                                                theq3=Label(food,text=fnal[i][1])
+                                                theq3.grid(row=7+p)
+                                                a=fnal[i][1]*50
+                                                f.append(a)
+                                                theamt3=Label(food,text=a)
+                                                theamt3.grid(row=7+p,column=2)
+                                            if fnal[i][0]=="PIZZAS":
+                                                theit4=Label(food,text="PIZZAS")
+                                                theit4.grid(row=8+p,sticky=W)
+                                                theq4=Label(food,text=fnal[i][1])
+                                                theq4.grid(row=8+p)
+                                                a=fnal[i][1]*100
+                                                f.append(a)
+                                                theamt4=Label(food,text=a)
+                                                theamt4.grid(row=8+p,column=2)
+                                            if fnal[i][0]=="NUTTIES":
+                                                theit5=Label(food,text="NUTTIES")
+                                                theit5.grid(row=9+p,sticky=W)
+                                                theq5=Label(food,text=fnal[i][1])
+                                                theq5.grid(row=9+p)
+                                                a=fnal[i][1]*70
+                                                f.append(a)
+                                                theamt5=Label(food,text=a)
+                                                theamt5.grid(row=9+p,column=2)
+                                            if fnal[i][0]=="NACHOS":
+                                                theit6=Label(food,text="NACHOS")
+                                                theit6.grid(row=10+p,sticky=W)
+                                                theq6=Label(food,text=fnal[i][1])
+                                                theq6.grid(row=10+p)
+                                                a=fnal[i][1]*65
+                                                f.append(a)
+                                                theamt6=Label(food,text=a)
+                                                theamt6.grid(row=10+p,column=2)
+                                            if fnal[i][0]=="HOTDOGS":
+                                                theit7=Label(food,text="HOTDOGS")
+                                                theit7.grid(row=11+p,sticky=W)
+                                                theq7=Label(food,text=fnal[i][1])
+                                                theq7.grid(row=11+p)
+                                                a=fnal[i][1]*60
+                                                f.append(a)
+                                                theamt7=Label(food,text=a)
+                                                theamt7.grid(row=11+p,column=2)
+                                            if fnal[i][0]=="TACOS":
+                                                theit8=Label(food,text="TACOS")
+                                                theit8.grid(row=12+p,sticky=W)
+                                                theq8=Label(food,text=fnal[i][1])
+                                                theq8.grid(row=12+p)
+                                                a=fnal[i][1]*60
+                                                f.append(a)
+                                                theamt8=Label(food,text=a)
+                                                theamt8.grid(row=12+p,column=2)
+                                        qty.grid(row = 4+p)
+                                        q=sum(numbers)
+                                        amt.grid(row = 4+p,column=2,sticky=E)
+                                        tota.grid(row=13+p,sticky=W)
+                                        t=sum(f)
+                                        theqty=Label(food, text =q)
+                                        theqty.grid(row=13+p)
+                                        thetotal=Label(food, text =t)
+                                        thetotal.grid(row=13+p,column=2)
+                                        tax.grid(row=14+p,sticky=W)
+                                        thetax.grid(row=14+p,column=2,sticky=E)
+                                        z=float(0.03*t)+t
+                                        total.grid(row=15+p,sticky=W)
+                                        thetotal=Label(food, text =z)
+                                        thetotal.grid(row=15+p,column=2,sticky=E)
+                                        appendfood()
+                                        #FOOD.CSV
+                                        #entryfood()
+                                        enterfood()
+                                        food.mainloop()
+                                        ty=Tk() 
+                                        ty.geometry("300x80")
+                                        ty.title("ty")
+                                        r=Label(ty,text="Thank you, visit again!!",font=('calibre', 20,"normal"))
+                                        r.grid(row=1,column=1)
+                                        loginButton = Button(ty, text="OK", width=6,command=ty.destroy).grid(row=4,
+ 		           column=1)  
+                                        ty.mainloop()
+                                #pygame.display.update()        
+                                if event.type == pygame.QUIT:
+                                   pygame.quit() 
+                                   quit()  
+                                pygame.display.update() 
+                click=0
+        #pygame.display.update().        
+        if event.type == pygame.QUIT:
+           pygame.quit() 
+           quit()  
+        pygame.display.update()
+
+
+
